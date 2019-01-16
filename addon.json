@@ -1,0 +1,10 @@
+{
+    "title": "TTT Startup Script Loader",
+    "type": "ServerContent",
+    "ignore": [
+        "*.git*",
+        "README.md",
+        "LICENSE",
+        "logo.jpg"
+    ]
+}
