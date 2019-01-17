@@ -5,6 +5,7 @@
         "*.git*",
         "README.md",
         "LICENSE",
-        "logo.jpg"
+        "logo.jpg",
+        "new_logo.jpg"
     ]
 }
