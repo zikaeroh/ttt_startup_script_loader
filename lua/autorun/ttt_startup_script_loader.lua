@@ -1,12 +1,11 @@
 local SCRIPT_DIR = "ttt_startup_scripts"
-local HOOK_ID = "ttt_startup_script_loader"
 
 local function Log(...)
     Msg("TTT Startup Script Loader: ", ...)
 end
 
 local function LogErr(...)
-    MsgC(Color(255, 0, 0), "TTT Startup Script Loader: ", ...)
+    MsgC(Color(255, 90, 90), "TTT Startup Script Loader: ", ...)
 end
 
 Log("starting\n")
@@ -61,7 +60,10 @@ setmetatable(tempG, {
 
 local function executeFile(filepath)
     local f = CompileFile(filepath)
-    if !f then return end
+    if !f then
+        LogErr("compiled func for ", filepath, " was nil\n")
+        return
+    end
 
     setfenv(f, tempG)
     local success, err = pcall(f)
@@ -98,10 +100,38 @@ local function forEachFoundFile(func)
     for _, f in ipairs(foundFiles) do func(f) end
 end
 
-hook.Add("InitPostEntity", HOOK_ID, function()
-    hook.Remove("InitPostEntity", HOOK_ID)
+local HOOK_ID = "ttt_startup_script_loader"
+local HOOK_INIT = "PostGamemodeLoaded"
+local HOOK_WORK = "InitPostEntity"
+
+hook.Add(HOOK_INIT, HOOK_ID, function()
+    hook.Remove(HOOK_INIT, HOOK_ID)
     if GAMEMODE.Name ~= "Trouble in Terrorist Town" then return end
-    forEachFoundFile(executeFile)
+
+    -- Some addons use the InitPostEntity hook to add equipment items,
+    -- so depending on the table of hooks, the loader may come before them
+    -- and force Equipment to be cached, preventing those addons from having
+    -- any effect. Instead of using the hook directly, hook earlier and
+    -- replace the gamemode's function entirely to ensure that the loader
+    -- is last.
+
+    local orig = GAMEMODE[HOOK_WORK]
+
+    if !orig then
+        LogErr("Hook " .. HOOK_WORK .. "not found; loader will not run\n")
+        return
+    end
+
+    GAMEMODE[HOOK_WORK] = function(...)
+        GAMEMODE[HOOK_WORK] = orig
+
+        local success, err = pcall(forEachFoundFile, executeFile)
+        if !success then
+            LogErr(err)
+        end
+
+        return orig(...)
+    end
 end)
 
 if SERVER then
