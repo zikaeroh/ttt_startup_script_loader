@@ -32,12 +32,21 @@ local tempG = {
 
 if CLIENT then
     local originalEquipment
+    local equipment
+
+    local function getActualEquipment()
+        if !equipment then
+            GetEquipmentForRole(0) -- Force Equipment to be populated
+            equipment = lookupInFunc(GetEquipmentForRole, "Equipment")
+        end
+
+        return equipment
+    end
 
     local function getEquipment()
-        if SERVER then return nil end
+        local equipment = getActualEquipment()
+        if !equipment then return nil end
 
-        GetEquipmentForRole(0) -- Force Equipment to be populated
-        local equipment = lookupInFunc(GetEquipmentForRole, "Equipment")
         if !originalEquipment then
             originalEquipment = table.Copy(equipment)
         end
@@ -46,6 +55,13 @@ if CLIENT then
     end
 
     local function getOriginalEquipment()
+        if !originalEquipment then
+            local equipment = getActualEquipment()
+            if !equipment then return nil end
+            
+            originalEquipment = table.Copy(equipment)
+        end
+
         return table.Copy(originalEquipment)
     end
 
