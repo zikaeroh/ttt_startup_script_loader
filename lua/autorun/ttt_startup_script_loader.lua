@@ -69,7 +69,7 @@ function Memo:GetOrig()
     return deepCopy(self.origV)
 end
 
-local function lookupInFunc(func, name)
+local function lookupInFuncHelper(func, name)
     if func == nil then return nil end
     local info = debug.getinfo(func, "uS")
     if info == nil or info.what ~= "Lua" then return nil end
@@ -83,9 +83,30 @@ local function lookupInFunc(func, name)
     return nil
 end
 
+local function lookupInFunc(func, ...)
+    if func == nil then return nil end
+    if type(func) == "string" then func = _G[func] end
+    if type(func) ~= "function" then return nil end
+
+    local curr = func
+    for _, v in ipairs({...}) do
+        curr = lookupInFuncHelper(curr, v)
+        if curr == nil then return nil end
+    end
+
+    return curr
+end
+
+local function extendSWEP(weapon_class, tab)
+    local v = weapons.GetStored(weapon_class)
+    if !v then return end
+    table.Merge(v, tab)
+end
+
 local tempG = {
     lookupInFunc = lookupInFunc,
     deepCopy = deepCopy,
+    extendSWEP = extendSWEP,
 }
 
 if CLIENT then
@@ -100,8 +121,7 @@ end
 
 if SERVER then
     local deathsounds = Memo:New(function()
-        local pds = lookupInFunc(GAMEMODE.DoPlayerDeath, "PlayDeathSound")
-        return lookupInFunc(pds, "deathsounds")
+        return lookupInFunc(GAMEMODE.DoPlayerDeath, "PlayDeathSound", "deathsounds")
     end)
 
     tempG.getDeathsounds = function() return deathsounds:Get() end
