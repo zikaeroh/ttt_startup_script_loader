@@ -10,7 +10,64 @@ end
 
 Log("starting\n")
 
--- Functions available inside loaded scripts.
+-- Similar to https://rosettacode.org/wiki/Deepcopy#Lua and table.Copy.
+local function deepCopy(o, tables)
+    if o == nil then return nil end
+    
+    local typ = type(o)
+    if typ == "Vector" then
+        return Vector(o.x, o.y, o.z)
+    elseif typ == "Angle" then
+        return Angle(o.p, o.y, o.r)
+    elseif typ ~= "table" then
+        return o
+    end
+
+    if !tables then tables = {} end
+    if tables[o] != nil then return tables[o] end
+    
+    local new_o = {}
+    setmetatable(new_o, debug.getmetatable(o))
+    tables[o] = new_o
+
+    for k, v in pairs(o) do
+        local k = deepCopy(k, tables)
+        local v = deepCopy(v, tables)
+        new_o[k] = v
+    end
+    
+    return new_o
+end
+
+local Memo = {}
+Memo.__index = Memo
+
+function Memo:New(getter)
+    local this = {
+        getter = getter or function() return nil end
+    }
+    setmetatable(this, self)
+    return this
+end
+
+function Memo:Cache()
+    if !self.cached then
+        local v = self.getter()
+        self.v = v
+        self.origV = deepCopy(v)
+        self.cached = true
+    end
+end
+
+function Memo:Get()
+    self:Cache()
+    return self.v
+end
+
+function Memo:GetOrig()
+    self:Cache()
+    return deepCopy(self.origV)
+end
 
 local function lookupInFunc(func, name)
     if func == nil then return nil end
@@ -28,45 +85,27 @@ end
 
 local tempG = {
     lookupInFunc = lookupInFunc,
+    deepCopy = deepCopy,
 }
 
 if CLIENT then
-    local originalEquipment
-    local equipment
+    local equipment = Memo:New(function()
+        GetEquipmentForRole(0) -- Force Equipment to be populated
+        return lookupInFunc(GetEquipmentForRole, "Equipment")
+    end)
 
-    local function getActualEquipment()
-        if !equipment then
-            GetEquipmentForRole(0) -- Force Equipment to be populated
-            equipment = lookupInFunc(GetEquipmentForRole, "Equipment")
-        end
+    tempG.getEquipment = function() return equipment:Get() end
+    tempG.getOriginalEquipment = function() return equipment:GetOrig() end
+end
 
-        return equipment
-    end
+if SERVER then
+    local deathsounds = Memo:New(function()
+        local pds = lookupInFunc(GAMEMODE.DoPlayerDeath, "PlayDeathSound")
+        return lookupInFunc(pds, "deathsounds")
+    end)
 
-    local function getEquipment()
-        local equipment = getActualEquipment()
-        if !equipment then return nil end
-
-        if !originalEquipment then
-            originalEquipment = table.Copy(equipment)
-        end
-
-        return equipment
-    end
-
-    local function getOriginalEquipment()
-        if !originalEquipment then
-            local equipment = getActualEquipment()
-            if !equipment then return nil end
-            
-            originalEquipment = table.Copy(equipment)
-        end
-
-        return table.Copy(originalEquipment)
-    end
-
-    tempG.getEquipment = getEquipment
-    tempG.getOriginalEquipment = getOriginalEquipment
+    tempG.getDeathsounds = function() return deathsounds:Get() end
+    tempG.getOriginalDeathsounds = function() return deathsounds:GetOrig() end
 end
 
 setmetatable(tempG, {

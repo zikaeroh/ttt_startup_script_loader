@@ -16,5 +16,7 @@ The scripts are run once at TTT initialization, within a `pcall`.
 The scripts are run in the global environment, with the following extra functions:
 
 - `getEquipment()` - returns TTT's underlying `Equipment` table (available only to `CLIENT`).
-- `getOriginalEquipment()` - returns the `Equipment` table as it was before any scripts ran (available only to `CLIENT`).
+- `getOriginalEquipment()` - returns a copy of the `Equipment` table as it was before any scripts ran (available only to `CLIENT`).
+- `getDeathsounds()` - returns TTT's underlying `deathsounds` table (available only to `SERVER`).
+- `getOriginalDeathsounds()` - returns a copy of the `deathsounds` table as it was before any scripts ran (available only to `SERVER`).
 - `lookupInFunc(func, name)` - looks up a variable available to the specified function.
