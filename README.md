@@ -20,3 +20,4 @@ The scripts are run in the global environment, with the following extra function
 - `getDeathsounds()` - returns TTT's underlying `deathsounds` table (available only to `SERVER`).
 - `getOriginalDeathsounds()` - returns a copy of the `deathsounds` table as it was before any scripts ran (available only to `SERVER`).
 - `lookupInFunc(func, name)` - looks up a variable available to the specified function.
+- `deepCopy(v)` - makes a deep copy of any value.
