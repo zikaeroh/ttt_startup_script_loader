@@ -1,3 +1,5 @@
+if engine.ActiveGamemode() ~= "terrortown" then return end
+
 local SCRIPT_DIR = "ttt_startup_scripts"
 
 local function Log(...)
@@ -181,7 +183,6 @@ local HOOK_WORK = "InitPostEntity"
 
 hook.Add(HOOK_INIT, HOOK_ID, function()
     hook.Remove(HOOK_INIT, HOOK_ID)
-    if GAMEMODE.Name ~= "Trouble in Terrorist Town" then return end
 
     -- Some addons use the InitPostEntity hook to add equipment items,
     -- so depending on the table of hooks, the loader may come before them
